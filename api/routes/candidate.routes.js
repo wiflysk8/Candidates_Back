@@ -4,6 +4,11 @@ const router = express.Router();
 
 const candidates = require("../models/candidates");
 
+const {
+  upload,
+  uploadToCloudinary,
+} = require("../middlewares/file.middleware");
+
 router.get("/", async (req, res) => {
   try {
     const candidatesList = await candidates.find(
@@ -16,23 +21,21 @@ router.get("/", async (req, res) => {
   }
 });
 
-router.post("/", async (req, res, next) => {
-  try {
-    const newCandidate = new candidates({
-      id: req.body.id,
-      name: req.body.name,
-      surname: req.body.surname,
-      phone: req.body.phone,
-      email: req.body.email,
-      cv: req.body.cv,
-    });
+router.post(
+  "/",
+  [upload.single("cv"), uploadToCloudinary],
+  async (req, res, next) => {
+    try {
+      req.body.cv = req.file_url;
+      const newCandidate = new candidates(req.body);
 
-    const createdCandidate = await newCandidate.save();
-    return res.status(201).json(createdCandidate);
-  } catch (error) {
-    next(error);
+      const createdCandidate = await newCandidate.save();
+      return res.status(201).json(createdCandidate);
+    } catch (error) {
+      next(error);
+    }
   }
-});
+);
 
 router.delete("/:id", async (req, res, next) => {
   try {
